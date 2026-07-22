@@ -33,15 +33,38 @@ Development", which only works on machines registered to your account.
 
 ### Export the certificate
 
-Keychain Access → **My Certificates** → find
-`Developer ID Application: SquirrelSoft LLC (…)` → right-click →
-**Export** → `.p12`, and set a password when prompted. That password
-becomes `APPLE_CERTIFICATE_PASSWORD`.
-
-Confirm you have the right kind first:
+Confirm you have the right kind first. This lists identities — a
+certificate *with* its private key — so anything it prints is signable:
 
 ```sh
 security find-identity -v -p codesigning | grep "Developer ID Application"
+```
+
+Then, in Keychain Access:
+
+1. Sidebar → keychain **login**, category **My Certificates**.
+2. Find `Developer ID Application: SquirrelSoft LLC (…)`.
+3. Expand the disclosure triangle. A private key should be nested under
+   the certificate.
+4. Right-click the **certificate** row — not the key beneath it — and
+   choose **Export**.
+5. Save as `.p12`, setting a password. That password is
+   `APPLE_CERTIFICATE_PASSWORD`.
+
+> **If the format menu only offers `.cer`, `.pem` and `.p7b`**, you are in
+> the **Certificates** category rather than **My Certificates**. Those
+> three are public-certificate formats and carry no private key, so
+> nothing exported from there can sign anything. Switch category and
+> export again.
+
+### Check the export before setting the secret
+
+A certificate-only export is the easiest mistake to make here and the
+most annoying to diagnose, because it does not fail loudly — Tauri simply
+skips signing, and you get a green build with an unsigned app in it.
+
+```sh
+./scripts/check-signing-cert.sh markdiff-signing.p12
 ```
 
 ### Set the secrets
