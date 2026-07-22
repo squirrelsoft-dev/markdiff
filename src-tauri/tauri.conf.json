@@ -36,6 +36,20 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "publisher": "SquirrelSoft LLC",
+    "copyright": "Copyright © 2026 SquirrelSoft LLC",
+    "category": "DeveloperTool",
+    "shortDescription": "Compare two markdown documents.",
+    "longDescription": "markdiff compares two markdown documents three ways: aligned source, unified source, and the rendered document with every edit marked in place. The side-by-side view is editable, so drafts can be pasted in and worked on directly.",
+    "licenseFile": "../LICENSE",
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
   }
 }

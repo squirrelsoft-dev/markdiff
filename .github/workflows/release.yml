@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (e.g. v0.1.0)"
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # One download covering both Apple Silicon and Intel.
+          - os: macos-latest
+            label: macOS (universal)
+            target: universal-apple-darwin
+            args: "--target universal-apple-darwin"
+          - os: ubuntu-22.04
+            label: Linux (x86_64)
+            target: ""
+            # Built on the oldest supported runner: glibc is forward
+            # compatible but not backward, so a newer box would produce
+            # binaries that refuse to start on older distributions.
+            args: ""
+          - os: windows-latest
+            label: Windows (x86_64)
+            target: ""
+            args: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
+            libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - run: npm ci
+
+      - name: Build, sign and publish
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signing and notarisation are macOS only. When the secrets are
+          # absent — in a fork, say — Tauri skips both and produces an
+          # unsigned build rather than failing.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: markdiff __VERSION__
+          releaseBody: |
+            See [CHANGELOG.md](https://github.com/squirrelsoft-dev/markdiff/blob/main/CHANGELOG.md).
+
+            The macOS build is signed and notarised. Linux and Windows
+            builds are unsigned — see the README for what your OS will say
+            about that and how to get past it.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

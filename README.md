@@ -1,6 +1,7 @@
 # markdiff
 
 [![CI](https://github.com/squirrelsoft-dev/markdiff/actions/workflows/ci.yml/badge.svg)](https://github.com/squirrelsoft-dev/markdiff/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/squirrelsoft-dev/markdiff?sort=semver)](https://github.com/squirrelsoft-dev/markdiff/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A desktop app for comparing two markdown files. Tauri 2 + React, with the
@@ -9,6 +10,29 @@ diff engine in Rust.
 Three ways to read a diff — aligned source, unified source, and the
 rendered document with the edits marked in place — and the side-by-side
 view is editable, so you can paste two drafts in and work on them.
+
+## Download
+
+**[Latest release →](https://github.com/squirrelsoft-dev/markdiff/releases/latest)**
+
+| Platform | File | Notes |
+|---|---|---|
+| macOS 10.15+ | `markdiff_<version>_universal.dmg` | One download for Apple Silicon and Intel. Signed and notarised. |
+| Windows 10+ | `markdiff_<version>_x64-setup.exe` or `_x64_en-US.msi` | Unsigned — see below. |
+| Linux (x86_64) | `.AppImage`, `.deb` or `.rpm` | Unsigned, as is normal outside distribution repositories. |
+
+Or build it yourself — see [Development](#development).
+
+### On the warnings
+
+The macOS build is signed with a Developer ID certificate and notarised
+by Apple, so it opens without complaint.
+
+The Windows build is not signed. SmartScreen will show "Windows protected
+your PC" on first run until the download earns reputation; **More info →
+Run anyway** gets past it. Signing this properly needs a paid EV
+certificate, which is not worth it yet. Say so in an issue if it is
+blocking you.
 
 ## Views
 
