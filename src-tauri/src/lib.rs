@@ -190,6 +190,8 @@ mod tests {
         assert!(strays.is_empty(), "left behind: {strays:?}");
     }
 
+    // Unix mode bits only; Windows has a different permission model.
+    #[cfg(unix)]
     #[test]
     fn keeps_the_permissions_the_file_already_had() {
         use std::os::unix::fs::PermissionsExt;

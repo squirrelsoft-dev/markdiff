@@ -75,9 +75,22 @@ pub fn install_cli(app: AppHandle) -> Result<CliStatus, String> {
         std::fs::remove_file(&link).map_err(|e| format!("{}: {e}", link.display()))?;
     }
 
-    std::os::unix::fs::symlink(&launcher, &link).map_err(|e| format!("{}: {e}", link.display()))?;
+    symlink_file(&launcher, &link).map_err(|e| format!("{}: {e}", link.display()))?;
 
     Ok(status(&app))
+}
+
+/// A symlink at `dst` pointing to `src`. The feature is dormant off macOS
+/// (there is no `.app` to link into), but the code still has to compile
+/// for the Windows and Linux release builds.
+#[cfg(unix)]
+fn symlink_file(src: &Path, dst: &Path) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(src, dst)
+}
+
+#[cfg(not(unix))]
+fn symlink_file(src: &Path, dst: &Path) -> std::io::Result<()> {
+    std::os::windows::fs::symlink_file(src, dst)
 }
 
 /// Installs into `/usr/local/bin` behind the standard macOS administrator
@@ -195,11 +208,19 @@ fn in_app_bundle() -> bool {
     })
 }
 
+#[cfg(unix)]
 fn is_executable(path: &Path) -> bool {
     use std::os::unix::fs::PermissionsExt;
     std::fs::metadata(path)
         .map(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
         .unwrap_or(false)
+}
+
+#[cfg(not(unix))]
+fn is_executable(path: &Path) -> bool {
+    // Windows has no executable bit; a regular file is close enough, and
+    // this path is not reached there anyway.
+    path.is_file()
 }
 
 /// An existing `markdiff` link that points at this app's launcher.
