@@ -16,16 +16,27 @@ ARTIFACT=${1:-}
 
 APP=$ARTIFACT
 MOUNT=""
-cleanup() { [ -n "$MOUNT" ] && hdiutil detach "$MOUNT" -quiet 2>/dev/null || true; }
+cleanup() {
+  [ -n "$MOUNT" ] || return 0
+  hdiutil detach "$MOUNT" -quiet 2>/dev/null || true
+  rmdir "$MOUNT" 2>/dev/null || true
+}
 trap cleanup EXIT
 
 case "$ARTIFACT" in
   *.dmg)
-    echo "▸ Verifying the disk image is signed and notarised…"
-    spctl -a -vvv -t open --context context:primary-signature "$ARTIFACT" 2>&1 || true
-    MOUNT=$(hdiutil attach "$ARTIFACT" -nobrowse -readonly 2>/dev/null \
-      | grep -o '/Volumes/[^[:cntrl:]]*' | head -1)
-    [ -n "$MOUNT" ] || { echo "✗ Could not mount the image." >&2; exit 1; }
+    echo "▸ Signature on the disk image itself"
+    codesign --verify --verbose=2 "$ARTIFACT" 2>&1 | tail -1 || true
+
+    MOUNT=$(mktemp -d /tmp/markdiff-verify.XXXXXX)
+    # `yes` accepts a click-through licence agreement, if the image has
+    # one, instead of hanging waiting for a keypress that never comes.
+    if ! yes | hdiutil attach "$ARTIFACT" -nobrowse -readonly \
+        -mountpoint "$MOUNT" >/dev/null 2>&1; then
+      echo "✗ Could not mount the image." >&2
+      rmdir "$MOUNT" 2>/dev/null || true
+      exit 1
+    fi
     APP=$(find "$MOUNT" -maxdepth 1 -name '*.app' | head -1)
     [ -n "$APP" ] || { echo "✗ No .app inside the image." >&2; exit 1; }
     ;;
