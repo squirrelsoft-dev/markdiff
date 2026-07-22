@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# markdiff — command-line launcher for markdiff.app on macOS.
+#
+# An app bundle's executable is not on PATH, and an app started through
+# LaunchServices begins life in `/` rather than the shell's directory, so
+# relative paths are resolved here before being handed over.
+#
+# Install with:  ./scripts/install-cli.sh
+# Override the app location with the MARKDIFF_APP environment variable.
+
+set -eu
+
+APP=${MARKDIFF_APP:-}
+
+if [ -z "$APP" ]; then
+  for candidate in \
+    "/Applications/markdiff.app" \
+    "$HOME/Applications/markdiff.app"
+  do
+    if [ -d "$candidate" ]; then
+      APP=$candidate
+      break
+    fi
+  done
+fi
+
+if [ -z "$APP" ] || [ ! -d "$APP" ]; then
+  echo "markdiff: could not find markdiff.app in /Applications or ~/Applications." >&2
+  echo "          Set MARKDIFF_APP to its path if it lives somewhere else." >&2
+  exit 1
+fi
+
+# Rebuild the argument list with every path made absolute. Using the
+# positional parameters keeps filenames with spaces in one piece.
+remaining=$#
+while [ "$remaining" -gt 0 ]; do
+  arg=$1
+  shift
+  case $arg in
+    -*) set -- "$@" "$arg" ;;
+    /*) set -- "$@" "$arg" ;;
+    *)  set -- "$@" "$PWD/$arg" ;;
+  esac
+  remaining=$((remaining - 1))
+done
+
+# -n opens a new instance, so a second invocation compares a second pair
+# instead of just bringing the existing window forward.
+exec open -na "$APP" --args "$@"

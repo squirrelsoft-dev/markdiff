@@ -1,0 +1,1159 @@
+/* ==========================================================================
+   markdiff — a dense, quiet reading surface. Chrome stays out of the way so
+   the only saturated colour on screen is the diff itself.
+   ========================================================================== */
+
+:root {
+  --bg: #0e1014;
+  --bg-raised: #14171d;
+  --bg-sunken: #0a0c0f;
+  --line: #222732;
+  --line-soft: #1a1e26;
+
+  --fg: #dfe3ea;
+  --fg-dim: #99a1b0;
+  --fg-faint: #626b7b;
+
+  --accent: #7aa2f7;
+  --accent-soft: rgba(122, 162, 247, 0.14);
+
+  --add: #4ec26f;
+  --add-bg: rgba(78, 194, 111, 0.1);
+  --add-strong: rgba(78, 194, 111, 0.3);
+  --del: #f0666f;
+  --del-bg: rgba(240, 102, 111, 0.1);
+  --del-strong: rgba(240, 102, 111, 0.28);
+
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui,
+    sans-serif;
+
+  --line-h: 21px;
+  --gutter: 4.5ch;
+  --radius: 7px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #ffffff;
+    --bg-raised: #f7f8fa;
+    --bg-sunken: #f0f2f5;
+    --line: #dfe3ea;
+    --line-soft: #eceff4;
+
+    --fg: #1c2027;
+    --fg-dim: #5b6472;
+    --fg-faint: #8d96a5;
+
+    --accent: #3b6fd4;
+    --accent-soft: rgba(59, 111, 212, 0.12);
+
+    --add: #1a7f37;
+    --add-bg: rgba(26, 127, 55, 0.09);
+    --add-strong: rgba(26, 127, 55, 0.24);
+    --del: #cf222e;
+    --del-bg: rgba(207, 34, 46, 0.08);
+    --del-strong: rgba(207, 34, 46, 0.22);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---- file bar ----------------------------------------------------------- */
+
+.filebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-raised);
+  flex: 0 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+  user-select: none;
+}
+
+.brand-mark {
+  color: var(--accent);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.brand-name {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--fg-dim);
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 0 8px 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg-dim);
+  text-align: left;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.chip-open {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.chip-dirty {
+  color: var(--accent);
+  font-size: 9px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.chip-clear {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fg-faint);
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0;
+}
+
+.chip:hover .chip-clear {
+  opacity: 1;
+}
+
+.chip-clear:hover {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+
+.chip-loaded {
+  color: var(--fg);
+}
+
+.chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.chip-meta {
+  margin-left: auto;
+  color: var(--fg-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.dot-left {
+  background: var(--del);
+}
+
+.dot-right {
+  background: var(--add);
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 14px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+
+.icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.icon-button-on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---- toolbar ------------------------------------------------------------ */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  flex: 0 0 auto;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.segmented {
+  display: flex;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-soft);
+}
+
+.seg {
+  padding: 4px 11px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+
+.seg:hover {
+  color: var(--fg);
+}
+
+.seg-on {
+  background: var(--bg-raised);
+  color: var(--fg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.segmented-sub .seg {
+  font-size: 11px;
+  padding: 3px 9px;
+}
+
+.fader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--fg-faint);
+  font-size: 11px;
+}
+
+.fader input {
+  width: 120px;
+  accent-color: var(--accent);
+}
+
+.stats {
+  display: flex;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-add {
+  color: var(--add);
+}
+
+.stat-del {
+  color: var(--del);
+}
+
+.stat-mod {
+  color: var(--fg-faint);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.stepper button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.stepper button:hover:not(:disabled) {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+
+.stepper button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.stepper-count {
+  padding: 0 6px;
+  color: var(--fg-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- options menu ------------------------------------------------------- */
+
+.menu-root {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 210px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--bg-raised);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border-radius: 5px;
+  color: var(--fg-dim);
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background: var(--bg-sunken);
+  color: var(--fg);
+}
+
+.menu-item input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.menu-rule {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--line);
+}
+
+.menu-action {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--fg-dim);
+  text-align: left;
+  font-size: inherit;
+}
+
+.menu-action:hover:not(:disabled) {
+  background: var(--bg-sunken);
+  color: var(--accent);
+}
+
+.menu-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.menu-note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 9px;
+  color: var(--fg-faint);
+}
+
+.menu-path {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  overflow-wrap: anywhere;
+}
+
+.menu-error {
+  padding: 4px 9px 7px;
+  color: var(--del);
+  font-size: 11px;
+}
+
+/* ---- banners ------------------------------------------------------------ */
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.banner-error {
+  background: var(--del-bg);
+  color: var(--del);
+}
+
+.banner-dismiss,
+.banner-error button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.banner-quiet {
+  background: var(--bg-raised);
+  color: var(--fg-dim);
+}
+
+.banner-offer {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
+.banner-text {
+  min-width: 0;
+}
+
+.banner-code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-sunken);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.banner-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.banner-actions button {
+  padding: 4px 11px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--fg-dim);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.banner-actions button:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--fg-faint);
+}
+
+.banner-primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  font-weight: 500;
+}
+
+.banner-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---- stage / viewport --------------------------------------------------- */
+
+.stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.viewport {
+  flex: 1 1 auto;
+  overflow: auto;
+  position: relative;
+}
+
+/* ---- diff rows ---------------------------------------------------------- */
+
+.rows {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: var(--line-h);
+  padding-bottom: 40vh; /* let the last change reach the middle of the screen */
+}
+
+.row {
+  display: flex;
+  min-height: var(--line-h);
+  scroll-margin: 30vh 0;
+}
+
+.row:hover {
+  background: var(--line-soft);
+}
+
+.half {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.half-right {
+  border-left: 1px solid var(--line);
+}
+
+.lineno {
+  flex: 0 0 var(--gutter);
+  padding-right: 8px;
+  text-align: right;
+  color: var(--fg-faint);
+  font-size: 11px;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.marker {
+  flex: 0 0 2ch;
+  text-align: center;
+  color: var(--fg-faint);
+  user-select: none;
+}
+
+.text {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 4;
+}
+
+/* Editable lines: the caret is the only affordance, so the cell must not
+   look like a form field — no border, no background, no focus ring. */
+.text-editable {
+  outline: none;
+  cursor: text;
+  min-height: var(--line-h);
+}
+
+/* No border and no ring — a box would read as a form field. The caret,
+   and a tint barely above the line's own colour, are enough. */
+.text-editable:focus {
+  outline: none;
+  background: rgba(127, 127, 127, 0.09);
+  border-radius: 2px;
+}
+
+.half:hover .text-editable {
+  cursor: text;
+}
+
+/* A blank line still needs to be clickable. */
+.text-editable:empty::after {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: var(--line-h);
+  vertical-align: text-bottom;
+}
+
+.empty-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.empty-links .link-button {
+  margin-top: 0;
+}
+
+.empty-sep {
+  color: var(--fg-faint);
+}
+
+/* line tinting */
+.is-insert,
+.row-inline.is-insert {
+  background: var(--add-bg);
+}
+
+.is-delete,
+.row-inline.is-delete {
+  background: var(--del-bg);
+}
+
+.half-left.is-replace {
+  background: var(--del-bg);
+}
+
+.half-right.is-replace {
+  background: var(--add-bg);
+}
+
+.is-absent {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    var(--line-soft) 6px,
+    var(--line-soft) 7px
+  );
+}
+
+.is-insert .marker,
+.half-right.is-replace .marker {
+  color: var(--add);
+}
+
+.is-delete .marker,
+.half-left.is-replace .marker {
+  color: var(--del);
+}
+
+/* word-level highlights */
+.span {
+  border-radius: 3px;
+  padding: 1px 0;
+  color: inherit;
+  background: none;
+}
+
+.span-insert {
+  background: var(--add-strong);
+}
+
+.span-delete {
+  background: var(--del-strong);
+}
+
+/* the change the stepper last landed on */
+.is-current {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* ---- headers ------------------------------------------------------------ */
+
+.split-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line);
+}
+
+.split-header-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 12px;
+  color: var(--fg-dim);
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.split-header-cell + .split-header-cell {
+  border-left: 1px solid var(--line);
+}
+
+.inline-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding: 6px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line);
+  color: var(--fg-dim);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.inline-header-arrow {
+  color: var(--fg-faint);
+  margin: 0 3px;
+}
+
+.rows-inline .lineno:nth-of-type(2) {
+  border-right: 1px solid var(--line-soft);
+  margin-right: 4px;
+}
+
+/* ---- collapsed regions -------------------------------------------------- */
+
+.gap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 5px 14px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-sunken);
+  color: var(--fg-faint);
+  font-family: var(--sans);
+  font-size: 11px;
+}
+
+.gap:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.gap-rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.22;
+}
+
+.gap-label {
+  white-space: nowrap;
+}
+
+/* ---- empty state -------------------------------------------------------- */
+
+.empty {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.empty-inner {
+  text-align: center;
+  max-width: 560px;
+}
+
+.empty-title {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.empty-sub {
+  margin: 0 0 26px;
+  color: var(--fg-dim);
+}
+
+.empty-slots {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.empty-vs {
+  color: var(--fg-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.slot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 16px 18px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: var(--bg-raised);
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.slot:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.slot-filled {
+  border-style: solid;
+}
+
+.slot-label {
+  color: var(--fg-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.slot-value {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.link-button {
+  margin-top: 22px;
+  border: 0;
+  background: transparent;
+  color: var(--fg-dim);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 12px;
+}
+
+.link-button:hover {
+  color: var(--accent);
+}
+
+/* ---- drop target -------------------------------------------------------- */
+
+.drop-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 12, 15, 0.72);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.drop-card {
+  padding: 20px 34px;
+  border: 2px dashed var(--accent);
+  border-radius: 12px;
+  background: var(--bg-raised);
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ---- rendered documents (overlay) --------------------------------------- */
+
+.prose {
+  max-width: 74ch;
+  margin: 0 auto;
+  padding: 32px 32px 40vh;
+  font-size: 14.5px;
+  line-height: 1.68;
+}
+
+/* Sits above the rendered document, in the document's own measure. */
+.prose-note {
+  max-width: 74ch;
+  margin: 16px auto -8px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: var(--bg-raised);
+  color: var(--fg-dim);
+  font-size: 11.5px;
+  position: relative;
+  z-index: 1;
+}
+
+.prose > *:first-child {
+  margin-top: 0;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  line-height: 1.3;
+  margin: 1.7em 0 0.6em;
+  font-weight: 650;
+}
+
+.prose h1 {
+  font-size: 1.7em;
+}
+.prose h2 {
+  font-size: 1.32em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--line);
+}
+.prose h3 {
+  font-size: 1.12em;
+}
+
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose table,
+.prose pre {
+  margin: 0 0 1.05em;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin: 0.25em 0;
+}
+
+.prose a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+.prose blockquote {
+  margin-left: 0;
+  padding: 0.2em 0 0.2em 1em;
+  border-left: 3px solid var(--line);
+  color: var(--fg-dim);
+}
+
+.prose code {
+  font-family: var(--mono);
+  font-size: 0.87em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: var(--bg-sunken);
+}
+
+.prose pre {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  overflow-x: auto;
+}
+
+.prose pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.85em;
+  line-height: 1.55;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94em;
+}
+
+.prose th,
+.prose td {
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.prose th {
+  background: var(--bg-sunken);
+  font-weight: 600;
+}
+
+.prose hr {
+  height: 1px;
+  margin: 2em 0;
+  border: 0;
+  background: var(--line);
+}
+
+.prose img {
+  max-width: 100%;
+}
+
+/* ---- redline marks ------------------------------------------------------ */
+
+.prose-redline ins.rl-ins {
+  background: var(--add-bg);
+  color: var(--add);
+  text-decoration: none;
+  border-bottom: 1.5px solid var(--add-strong);
+  border-radius: 2px;
+  padding: 0.05em 0.12em;
+  scroll-margin: 30vh 0;
+}
+
+.prose-redline del.rl-del {
+  background: var(--del-bg);
+  color: var(--del);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  border-radius: 2px;
+  padding: 0.05em 0.12em;
+  opacity: 0.85;
+  scroll-margin: 30vh 0;
+}
+
+.prose-redline .is-current {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.rl-code {
+  position: relative;
+  padding: 12px 0 !important;
+}
+
+.rl-code[data-lang]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  color: var(--fg-faint);
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rl-code-line {
+  display: block;
+  padding: 0 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Blank lines in code would otherwise collapse to nothing. */
+.rl-code-line:empty::before {
+  content: "​";
+}
+
+.rl-code-ins {
+  background: var(--add-bg);
+  box-shadow: inset 2px 0 0 var(--add);
+}
+
+.rl-code-del {
+  background: var(--del-bg);
+  box-shadow: inset 2px 0 0 var(--del);
+  opacity: 0.85;
+}
+
+.rl-code-line .rl-ins {
+  background: var(--add-strong);
+  border-radius: 2px;
+}
+
+.rl-code-line .rl-del {
+  background: var(--del-strong);
+  border-radius: 2px;
+  text-decoration: line-through;
+}
+
+/* ---- stacked overlays --------------------------------------------------- */
+
+.stack {
+  display: grid;
+  min-height: 100%;
+}
+
+.stack-layer {
+  grid-area: 1 / 1;
+}
+
+/* Difference blending only reads against black, so this mode commits to a
+   dark presentation whatever the system theme is. */
+.stack-difference {
+  background: #000;
+  isolation: isolate;
+}
+
+.stack-difference .stack-layer {
+  color: #fff;
+}
+
+.stack-difference .stack-layer-top {
+  mix-blend-mode: difference;
+}
+
+.stack-difference code,
+.stack-difference pre,
+.stack-difference th {
+  background: transparent !important;
+  border-color: #333 !important;
+}

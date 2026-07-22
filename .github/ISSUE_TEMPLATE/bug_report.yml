@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in markdiff behaves incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A pair of markdown files that reproduces the
+        problem is the single most useful thing you can attach.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Open these two files (attached)
+        2. Switch to the Overlay view
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: samples
+    attributes:
+      label: Sample documents
+      description: >
+        Paste the two documents, or attach them. Reduce them if you can —
+        the smallest pair that still shows the problem.
+      render: markdown
+
+  - type: dropdown
+    id: view
+    attributes:
+      label: Which view
+      multiple: true
+      options:
+        - Side by side
+        - Inline
+        - Overlay — Redline
+        - Overlay — Fade
+        - Overlay — Difference
+        - Not view-specific
+
+  - type: input
+    id: version
+    attributes:
+      label: markdiff version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS 15.2 (Apple Silicon)
+    validations:
+      required: true

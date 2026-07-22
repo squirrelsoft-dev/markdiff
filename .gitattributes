@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.icns binary
+
+# Keep generated lockfiles out of diffs and language statistics.
+package-lock.json linguist-generated=true -diff
+src-tauri/Cargo.lock linguist-generated=true -diff
