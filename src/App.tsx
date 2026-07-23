@@ -7,6 +7,7 @@ import { EmptyState } from "./components/EmptyState";
 import { FileBar } from "./components/FileBar";
 import { Inline } from "./components/Inline";
 import { Overlay } from "./components/Overlay";
+import { OverviewGutter } from "./components/OverviewGutter";
 import { SideBySide } from "./components/SideBySide";
 import { Toolbar } from "./components/Toolbar";
 import {
@@ -21,6 +22,7 @@ import {
 } from "./lib/api";
 import { sampleDocuments } from "./lib/samples";
 import { useEditor, type Editor } from "./lib/useEditor";
+import { useTheme } from "./lib/useTheme";
 import type {
   DiffOptions,
   DiffResult,
@@ -196,6 +198,8 @@ export default function App() {
     editContent,
   );
   editorRef.current = editor;
+
+  const { resolved: resolvedTheme, toggle: toggleTheme } = useTheme();
 
   // Files named on the command line open straight into the diff.
   useEffect(() => {
@@ -384,6 +388,23 @@ export default function App() {
     [usesMarks],
   );
 
+  /**
+   * Jump straight to a change block, from the overview rail. Blocks are
+   * numbered 1..N in document order, so the block number is its ordinal
+   * and the cursor is one less.
+   */
+  const jumpToBlock = useCallback((block: number) => {
+    cursorRef.current = block - 1;
+    setCursor(block - 1);
+    const root = viewportRef.current;
+    root
+      ?.querySelectorAll(".is-current")
+      .forEach((el) => el.classList.remove("is-current"));
+    root
+      ?.querySelector(`[data-block="${block}"]`)
+      ?.classList.add("is-current");
+  }, []);
+
   // ---- keyboard ----------------------------------------------------------
 
   useEffect(() => {
@@ -488,6 +509,8 @@ export default function App() {
           onOptions={setOptions}
           collapsed={collapsed}
           onCollapsed={setCollapsed}
+          resolvedTheme={resolvedTheme}
+          onToggleTheme={toggleTheme}
         />
       )}
 
@@ -526,28 +549,44 @@ export default function App() {
             onBlank={startBlank}
           />
         ) : view === "split" ? (
-          <SideBySide
-            diff={diff}
-            leftName={left.name}
-            rightName={right.name}
-            context={CONTEXT_LINES}
-            collapsed={collapsed}
-            expanded={expanded}
-            onExpand={expandGap}
-            viewportRef={viewportRef}
-            editor={editor}
-          />
+          <div className="stage-with-overview">
+            <SideBySide
+              diff={diff}
+              leftName={left.name}
+              rightName={right.name}
+              context={CONTEXT_LINES}
+              collapsed={collapsed}
+              expanded={expanded}
+              onExpand={expandGap}
+              viewportRef={viewportRef}
+              editor={editor}
+            />
+            <OverviewGutter
+              diff={diff}
+              viewportRef={viewportRef}
+              currentBlock={cursor + 1}
+              onJump={jumpToBlock}
+            />
+          </div>
         ) : view === "inline" ? (
-          <Inline
-            diff={diff}
-            leftName={left.name}
-            rightName={right.name}
-            context={CONTEXT_LINES}
-            collapsed={collapsed}
-            expanded={expanded}
-            onExpand={expandGap}
-            viewportRef={viewportRef}
-          />
+          <div className="stage-with-overview">
+            <Inline
+              diff={diff}
+              leftName={left.name}
+              rightName={right.name}
+              context={CONTEXT_LINES}
+              collapsed={collapsed}
+              expanded={expanded}
+              onExpand={expandGap}
+              viewportRef={viewportRef}
+            />
+            <OverviewGutter
+              diff={diff}
+              viewportRef={viewportRef}
+              currentBlock={cursor + 1}
+              onJump={jumpToBlock}
+            />
+          </div>
         ) : (
           <Overlay
             diff={diff}

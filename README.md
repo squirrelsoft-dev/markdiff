@@ -109,6 +109,11 @@ Inline and Overlay are read-only for now.
   updates the diff. Unsaved edits in markdiff are never overwritten.
 - **Command line** — `markdiff old.md new.md` opens straight into the
   diff. See [Installing the CLI](#installing-the-cli).
+- **Change overview** — a rail down the right edge marks every change in
+  the whole document, coloured by kind (blue changed, green added, red
+  removed). Click a marker to jump to it; it tracks the current change.
+- **Theme** — dark or light, following the OS by default. The ☀/☾ toggle
+  in the toolbar sets an explicit choice that is remembered.
 - **Options** (⚙) — ignore whitespace, ignore case, highlight by
   character instead of by word, and turn folding off.
 

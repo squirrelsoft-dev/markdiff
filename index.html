@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>markdiff</title>
+    <script>
+      // Apply a stored theme before the first paint, so the window never
+      // flashes the OS theme and then swaps. Mirrors useTheme's contract:
+      // an explicit choice sets data-theme; "system" leaves it off.
+      (function () {
+        try {
+          var t = localStorage.getItem("markdiff.theme");
+          if (t === "light" || t === "dark") {
+            document.documentElement.setAttribute("data-theme", t);
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>

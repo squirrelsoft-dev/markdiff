@@ -3,27 +3,8 @@
    the only saturated colour on screen is the diff itself.
    ========================================================================== */
 
+/* Structural tokens — the same in both themes. */
 :root {
-  --bg: #0e1014;
-  --bg-raised: #14171d;
-  --bg-sunken: #0a0c0f;
-  --line: #222732;
-  --line-soft: #1a1e26;
-
-  --fg: #dfe3ea;
-  --fg-dim: #99a1b0;
-  --fg-faint: #626b7b;
-
-  --accent: #7aa2f7;
-  --accent-soft: rgba(122, 162, 247, 0.14);
-
-  --add: #4ec26f;
-  --add-bg: rgba(78, 194, 111, 0.1);
-  --add-strong: rgba(78, 194, 111, 0.3);
-  --del: #f0666f;
-  --del-bg: rgba(240, 102, 111, 0.1);
-  --del-strong: rgba(240, 102, 111, 0.28);
-
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui,
     sans-serif;
@@ -33,27 +14,85 @@
   --radius: 7px;
 }
 
+/* Colour, GitHub Primer. Dark is the default; the light palette applies
+   when the OS asks for it, and the theme toggle sets an explicit
+   `data-theme` on <html> that wins over both. Keeping the toggle on the
+   attribute rather than a media query is what lets it override the OS. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #090c11;
+  --bg-raised: #0d1117;
+  --bg-sunken: #161b24;
+  --line: #1d2431;
+  --line-soft: #141a22;
+
+  --fg: #d6deeb;
+  --fg-dim: #7d8794;
+  --fg-faint: #4d5666;
+
+  --accent: #2f81f7;
+  --accent-soft: rgba(47, 129, 247, 0.15);
+
+  --add: #5fdc7d;
+  --add-bg: rgba(46, 160, 67, 0.15);
+  --add-strong: rgba(46, 160, 67, 0.42);
+  --del: #ff8a82;
+  --del-bg: rgba(248, 81, 73, 0.13);
+  --del-strong: rgba(248, 81, 73, 0.36);
+}
+
+/* Shared by an explicit light choice and the OS default; see the two
+   selectors that pull it in below. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --bg-raised: #f6f8fa;
+  --bg-sunken: #eaeef2;
+  --line: #d0d7de;
+  --line-soft: #e8ebf0;
+
+  --fg: #1f2328;
+  --fg-dim: #636c76;
+  --fg-faint: #8c959f;
+
+  --accent: #0969da;
+  --accent-soft: rgba(9, 105, 218, 0.12);
+
+  --add: #1a7f37;
+  --add-bg: rgba(46, 160, 67, 0.12);
+  --add-strong: rgba(46, 160, 67, 0.28);
+  --del: #cf222e;
+  --del-bg: rgba(248, 81, 73, 0.1);
+  --del-strong: rgba(248, 81, 73, 0.24);
+}
+
 @media (prefers-color-scheme: light) {
-  :root {
+  /* Only when the user has not forced a theme. */
+  :root:not([data-theme]) {
+    color-scheme: light;
+
     --bg: #ffffff;
-    --bg-raised: #f7f8fa;
-    --bg-sunken: #f0f2f5;
-    --line: #dfe3ea;
-    --line-soft: #eceff4;
+    --bg-raised: #f6f8fa;
+    --bg-sunken: #eaeef2;
+    --line: #d0d7de;
+    --line-soft: #e8ebf0;
 
-    --fg: #1c2027;
-    --fg-dim: #5b6472;
-    --fg-faint: #8d96a5;
+    --fg: #1f2328;
+    --fg-dim: #636c76;
+    --fg-faint: #8c959f;
 
-    --accent: #3b6fd4;
-    --accent-soft: rgba(59, 111, 212, 0.12);
+    --accent: #0969da;
+    --accent-soft: rgba(9, 105, 218, 0.12);
 
     --add: #1a7f37;
-    --add-bg: rgba(26, 127, 55, 0.09);
-    --add-strong: rgba(26, 127, 55, 0.24);
+    --add-bg: rgba(46, 160, 67, 0.12);
+    --add-strong: rgba(46, 160, 67, 0.28);
     --del: #cf222e;
-    --del-bg: rgba(207, 34, 46, 0.08);
-    --del-strong: rgba(207, 34, 46, 0.22);
+    --del-bg: rgba(248, 81, 73, 0.1);
+    --del-strong: rgba(248, 81, 73, 0.24);
   }
 }
 
@@ -249,6 +288,10 @@ button {
 .icon-button-on {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+.theme-toggle {
+  font-size: 15px;
 }
 
 /* ---- toolbar ------------------------------------------------------------ */
@@ -552,6 +595,60 @@ button {
   flex: 1 1 auto;
   overflow: auto;
   position: relative;
+}
+
+/* ---- change overview rail ---------------------------------------------- */
+
+.stage-with-overview {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.overview {
+  position: relative;
+  flex: 0 0 14px;
+  background: var(--bg-raised);
+  border-left: 1px solid var(--line);
+}
+
+.overview-mark {
+  position: absolute;
+  right: 3px;
+  width: 8px;
+  height: 12px;
+  margin-top: -6px; /* centre on its position */
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+  opacity: 0.72;
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+.overview-mark:hover {
+  opacity: 1;
+  transform: scaleX(1.35);
+}
+
+.overview-mark.is-insert {
+  background: var(--add);
+}
+
+.overview-mark.is-delete {
+  background: var(--del);
+}
+
+.overview-mark.is-replace {
+  background: var(--accent);
+}
+
+.overview-mark.is-current {
+  opacity: 1;
+  right: 1px;
+  width: 11px;
+  box-shadow: 0 0 0 1px var(--bg-raised);
 }
 
 /* ---- diff rows ---------------------------------------------------------- */

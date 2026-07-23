@@ -41,6 +41,8 @@ interface Props {
   onOptions: (o: DiffOptions) => void;
   collapsed: boolean;
   onCollapsed: (v: boolean) => void;
+  resolvedTheme: "light" | "dark";
+  onToggleTheme: () => void;
 }
 
 export function Toolbar({
@@ -57,6 +59,8 @@ export function Toolbar({
   onOptions,
   collapsed,
   onCollapsed,
+  resolvedTheme,
+  onToggleTheme,
 }: Props) {
   return (
     <div className="toolbar">
@@ -147,6 +151,18 @@ export function Toolbar({
           </button>
         </div>
       )}
+
+      <button
+        type="button"
+        className="icon-button theme-toggle"
+        onClick={onToggleTheme}
+        title={
+          resolvedTheme === "dark" ? "Switch to light" : "Switch to dark"
+        }
+        aria-label="Toggle light and dark theme"
+      >
+        {resolvedTheme === "dark" ? "☾" : "☀"}
+      </button>
 
       <OptionsMenu
         options={options}
