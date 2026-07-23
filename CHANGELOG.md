@@ -6,6 +6,23 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-07-22
+
+### Added
+
+- **Light and dark themes**, in GitHub Primer colours, with a toggle in
+  the toolbar. The theme follows the OS by default and tracks OS changes
+  live; the toggle sets an explicit choice that is remembered and applied
+  before the first paint, so the window never flashes the wrong theme.
+- **Change overview rail** down the right edge of the side-by-side and
+  inline views: one marker per change, placed by its position in the whole
+  document and coloured by kind. Every change shows at once, and clicking a
+  marker jumps to it.
+
+### Changed
+
+- Recoloured both themes to the GitHub Primer palette.
+
 ## [0.1.0] — 2026-07-22
 
 First release.
@@ -30,5 +47,6 @@ First release.
   `markdiff old.md new.md` command line.
 - An offer, on first launch, to put `markdiff` on your PATH.
 
-[Unreleased]: https://github.com/squirrelsoft-dev/markdiff/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/squirrelsoft-dev/markdiff/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/squirrelsoft-dev/markdiff/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/squirrelsoft-dev/markdiff/releases/tag/v0.1.0
