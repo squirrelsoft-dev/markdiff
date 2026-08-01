@@ -68,7 +68,7 @@ jobs:
       - run: npm ci
 
       - name: Build, sign and publish
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Signing and notarisation are macOS only. When the secrets are
